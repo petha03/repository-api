@@ -1,0 +1,122 @@
+### Repository API - HTTP Client Tests
+### IntelliJ IDEA HTTP Client test file
+### See: https://www.jetbrains.com/help/idea/http-client-in-product-code-editor.html
+
+### Variables
+@baseUrl = https://localhost:8443
+@apiVersion = /api
+
+### Health Check - Custom health endpoint
+GET {{baseUrl}}/{{apiVersion}}/health
+Accept: application/json
+
+> {%
+    client.test("Health check returns 200", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    client.test("Health status is UP", function() {
+        client.assert(response.body.status === "UP", "Application is not healthy");
+    });
+    client.test("Response has timestamp", function() {
+        client.assert(response.body.timestamp !== undefined, "Timestamp is missing");
+    });
+%}
+
+###
+
+### Get Developer Profile - Valid User (octocat)
+GET {{baseUrl}}{{apiVersion}}/developers/octocat
+Accept: application/json
+
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    client.test("Response has user_name", function() {
+        client.assert(response.body.user_name === "octocat", "Username is not octocat");
+    });
+    client.test("Response has display_name", function() {
+        client.assert(response.body.display_name !== undefined, "Display name is missing");
+    });
+    client.test("Response has avatar", function() {
+        client.assert(response.body.avatar !== undefined, "Avatar is missing");
+    });
+    client.test("Response has repos array", function() {
+        client.assert(Array.isArray(response.body.repos), "Repos is not an array");
+    });
+    client.test("Repos array is not empty", function() {
+        client.assert(response.body.repos.length > 0, "Repos array is empty");
+    });
+%}
+
+###
+
+### Get Developer Profile - Another Valid User
+GET {{baseUrl}}{{apiVersion}}/developers/torvalds
+Accept: application/json
+
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    client.test("Response has correct username", function() {
+        client.assert(response.body.user_name === "torvalds", "Username is not torvalds");
+    });
+%}
+
+###
+
+### Get Developer Profile - User Not Found (404)
+GET {{baseUrl}}{{apiVersion}}/developers/user-definitely-does-not-exist-12345
+Accept: application/json
+
+> {%
+    client.test("Returns 404 status", function() {
+        client.assert(response.status === 404, "Response status is not 404");
+    });
+    client.test("Response is Problem Detail format", function() {
+        client.assert(response.body.title !== undefined, "Problem detail title is missing");
+        client.assert(response.body.detail !== undefined, "Problem detail detail is missing");
+    });
+%}
+
+###
+
+### Get Developer Profile - Invalid Username Format
+GET {{baseUrl}}{{apiVersion}}/developers/invalid--username
+Accept: application/json
+
+> {%
+    client.test("Returns 400 Bad Request", function() {
+        client.assert(response.status === 400, "Response status is not 400");
+    });
+    client.test("Response is Problem Detail format", function() {
+        client.assert(response.body.title !== undefined, "Problem detail title is missing");
+    });
+%}
+
+###
+
+### Get Developer Profile - Username too long (over 39 characters)
+GET {{baseUrl}}{{apiVersion}}/developers/this-username-is-way-too-long-for-github-validation
+Accept: application/json
+
+> {%
+    client.test("Returns 400 Bad Request", function() {
+        client.assert(response.status === 400, "Response status is not 400");
+    });
+%}
+
+###
+
+### Get Developer Profile - Empty username
+GET {{baseUrl}}{{apiVersion}}/developers/
+Accept: application/json
+
+> {%
+    client.test("Returns 404 or 400", function() {
+        client.assert(response.status === 404 || response.status === 400, "Response status is not 404 or 400");
+    });
+%}
+
+###

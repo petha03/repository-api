@@ -1,0 +1,89 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.1'
+    id 'io.spring.dependency-management' version '1.1.4'
+}
+
+group = 'com.branch'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = '17'
+}
+
+ext {
+    mapstructVersion = '1.5.5.Final'
+    springdocVersion = '2.3.0'
+    bucket4jVersion = '8.10.1'
+    httpclient5Version = '5.2.1'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencyManagement {
+    imports {
+        mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+    }
+    dependencies {
+        dependency "org.mapstruct:mapstruct:${mapstructVersion}"
+        dependency "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+        dependency "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+        dependency "com.bucket4j:bucket4j-core:${bucket4jVersion}"
+        dependency "org.apache.httpcomponents.client5:httpclient5:${httpclient5Version}"
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.mapstruct:mapstruct'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui'
+    implementation 'com.bucket4j:bucket4j-core'
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
+
+    annotationProcessor 'org.mapstruct:mapstruct-processor'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// Separate integration tests from unit tests
+sourceSets {
+    integrationTest {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/integration-test/java')
+        }
+        resources.srcDir file('src/integration-test/resources')
+    }
+}
+
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+task integrationTest(type: Test) {
+    description = 'Runs integration tests.'
+    group = 'verification'
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    useJUnitPlatform()
+    shouldRunAfter test
+}
+
+check.dependsOn integrationTest
